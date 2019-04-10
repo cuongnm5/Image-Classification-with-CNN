@@ -2,6 +2,8 @@
 
 Keras - Convolutional Neural Networks - Image Classification
 
+![Image](introCNN.png)
+
 ### Phân loại ảnh sử dụng mạng nơ-ron tích chập ( CNN ).
 
 Bài toán đặt ra là phân loại biến báo giao thông thành 8 nhóm cho trước. Bộ dữ liệu được dùng để huấn luyện là lí tưởng ( không có nhiễu ). Mình sử dụng mạng thần kinh 6 lớp để thực hiện điều này, với sự hỗ trợ từ Keras.
