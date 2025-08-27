@@ -1,115 +1,135 @@
-# Image-Classification-with-CNN
+# Image Classification with Convolutional Neural Networks (CNN)
 
-Keras - Convolutional Neural Networks - Image Classification
+This project demonstrates **image classification using Convolutional Neural Networks (CNNs)** with Keras and TensorFlow.  
+The goal is to classify traffic signs into **8 predefined categories** using an ideal (noise-free) dataset.  
 
-![Image](introCNN.png)
+![CNN Illustration](introCNN.png)
 
-### Phân loại ảnh sử dụng mạng nơ-ron tích chập ( CNN ).
+For an introduction to CNNs, see: [Understanding CNNs](https://medium.com/@RaghavPrabhu/understanding-of-convolutional-neural-network-cnn-deep-learning-99760835f148)
 
-Bài toán đặt ra là phân loại biến báo giao thông thành 8 nhóm cho trước. Bộ dữ liệu được dùng để huấn luyện là lí tưởng ( không có nhiễu ). Mình sử dụng mạng thần kinh 6 lớp để thực hiện điều này, với sự hỗ trợ từ Keras.
-Thông tin tham khảo về CNN: [Convolutional Neural Networks](https://medium.com/@RaghavPrabhu/understanding-of-convolutional-neural-network-cnn-deep-learning-99760835f148)
+---
 
-**1. Load dữ liệu**
+## 📌 Project Overview
+- **Dataset**: Traffic sign images divided into training and testing sets.  
+- **Model**: A 6-layer CNN built using Keras.  
+- **Training**: Model trained and weights saved in `.h5` format.  
+- **Prediction**: Classifies new images and outputs results into a CSV file.  
 
-  Ở đây mình sử dụng ImageDataGenerator, thư viện này hỗ trợ rất tốt việc đọc ảnh, các tính năng cơ bản gồm có định dạng size, xoay ảnh, lật ảnh, phóng to, giúp chúng ta có nhiều dữ liệu hơn phục vụ cho việc huấn luyện. Chi tiết các options các bạn có thể xem ở đây: [ImageDataGenerator](https://keras.io/preprocessing/image/)
-  
-  ``` python3
+---
+
+## 1. Data Loading
+
+We use **Keras `ImageDataGenerator`**, which provides convenient data augmentation techniques such as resizing, rotation, flipping, and zooming to improve generalization.
+
+📖 Documentation: [ImageDataGenerator](https://keras.io/preprocessing/image/)  
+
+```python3
 import tensorflow as tf
 from keras.models import Sequential
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
-from keras.layers import Flatten
-from keras.layers import Dense
-from keras.layers import Dropout
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.preprocessing.image import ImageDataGenerator
 
-train_datagen = ImageDataGenerator(rescale = 1./255,
-shear_range = 0.2,
-zoom_range = 0.2,
-horizontal_flip = True)
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True
+)
 
-test_datagen = ImageDataGenerator(rescale = 1./255)
+test_datagen = ImageDataGenerator(rescale=1./255)
 
-training_set = train_datagen.flow_from_directory('data/train',
-target_size = (64, 64),
-batch_size = 32,
-class_mode = 'categorical')
+training_set = train_datagen.flow_from_directory(
+    'data/train',
+    target_size=(64, 64),
+    batch_size=32,
+    class_mode='categorical'
+)
 
-test_set = test_datagen.flow_from_directory('data/public_test',
-target_size = (64, 64),
-batch_size = 32,
-class_mode = 'categorical')
+test_set = test_datagen.flow_from_directory(
+    'data/public_test',
+    target_size=(64, 64),
+    batch_size=32,
+    class_mode='categorical'
+)
 ```
 
-**2. Xây dựng model**
+**2. Building the Model**
 
-Vì đây là một bài toán đơn giản với dữ liệu đẹp, model của mình không có quá nhiều layer và các layer không phức tạp.
+Since this is a relatively simple classification task with clean data, the model is kept lightweight and efficient.
 
-``` python3 
-# Initialising the CNN
+```python3 
+# Initialize CNN
 classifier = Sequential()
 
-# Step 1 - Convolution
-classifier.add(Conv2D(32, (3, 3), input_shape = (64, 64, 3), activation = 'relu'))
+# Convolution + Pooling Layers
+classifier.add(Conv2D(32, (3, 3), input_shape=(64, 64, 3), activation='relu'))
+classifier.add(MaxPooling2D(pool_size=(2, 2)))
 
-# Step 2 - Pooling
-classifier.add(MaxPooling2D(pool_size = (2, 2)))
-# Adding a second axpooling
-classifier.add(Conv2D(32, (3, 3), activation = 'relu'))
-classifier.add(MaxPooling2D(pool_size = (2, 2)))
-# Adding a third convolutional layer
-classifier.add(Conv2D(64, (3, 3), activation = 'relu'))
-classifier.add(MaxPooling2D(pool_size= (2, 2)))
+classifier.add(Conv2D(32, (3, 3), activation='relu'))
+classifier.add(MaxPooling2D(pool_size=(2, 2)))
 
-# Step 3 - Flattening
+classifier.add(Conv2D(64, (3, 3), activation='relu'))
+classifier.add(MaxPooling2D(pool_size=(2, 2)))
+
+# Flattening
 classifier.add(Flatten())
 
-# Step 4 - Full connection
-classifier.add(Dense(units = 128, activation = 'relu'))
+# Fully Connected Layers
+classifier.add(Dense(units=128, activation='relu'))
 classifier.add(Dropout(0.5))
-classifier.add(Dense(units = 8, activation = 'softmax'))
-# Compiling the CNN
-classifier.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+classifier.add(Dense(units=8, activation='softmax'))
+
+# Compile the Model
+classifier.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
 ```
 
-**3. Huấn luyện**
+**3. Training**
 
-Huấn luyện model và lưu lại trọng số vào file .h5
+The model is trained on the dataset, and weights are saved as my_model.h5.
 
-``` python3
-#Train model
-classifier.fit_generator(training_set,
-steps_per_epoch = 6589,
-epochs = 5,
-validation_data = test_set,
-validation_steps = 20)
+```python3
+classifier.fit_generator(
+    training_set,
+    steps_per_epoch=6589,
+    epochs=5,
+    validation_data=test_set,
+    validation_steps=20
+)
 
 classifier.save('my_model.h5')
 ```
 
-**4. Nhận dạng ảnh**
+**4. Image Prediction**
 
-Ảnh cần phân loại ở file 'data/data_privare'. Chúng ta sẽ đọc file đó, lấy ra từng ảnh và sử dụng hàm predict_classes() để phân loại. Ảnh và nhãn đã được phân loại sẽ được lưu vào file 'solve.csv' dưới định dạng <ImageID,Label> 
+New images located in data/data_private are classified using the trained model.
+
+Predictions are saved in solve.csv in the format: ```<ImageID>,<Label>```
 
 ``` python3
+import os, cv2, np
 
 new_model = tf.keras.models.load_model('my_model.h5')
-new_model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+new_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 dirs = os.listdir('data/data_private')
-file = open("solve.csv", "a")
+with open("solve.csv", "a") as file:
+    for f in dirs:
+        file_name = os.path.join("data/data_private", f)
+        img = cv2.imread(file_name)
+        img = cv2.resize(img, (64, 64))
+        img = np.reshape(img, [1, 64, 64, 3])
+        classes = new_model.predict(img)
+        predicted_class = np.argmax(classes)
+        file.write(f"{f},{predicted_class}\n")
 
-for files in dirs:
-    file_name = "data/data_private/" + files
-    img = cv2.imread(file_name)
-    img = cv2.resize(img,(64,64))
-    img = np.reshape(img,[1,64,64,3])
-    classes = new_model.predict_classes(img)
-    x = int(classes)
-    file.write(files)
-    file.write(",")
-    file.write(str(x))
-    file.write("\n")
-
-file.close()
 ```
+
+**⚡ Notes**
+- predict_classes() is deprecated in recent TensorFlow versions. Use np.argmax(model.predict(x)) instead.
+- Data augmentation is crucial to improve generalization and avoid overfitting.
+- For larger datasets, consider using transfer learning (e.g., VGG16, ResNet) for better performance.
